@@ -1,5 +1,6 @@
 "use client";
 
+import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,24 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Bell,
   Bot,
   Brain,
+  Clock,
   Edit,
   FileText,
+  Globe,
   Plus,
   Settings,
   Trash2,
-  Workflow,
-  Zap,
-  Clock,
-  Globe,
-  Bell,
-  ChevronUp,
-  ChevronDown
+  Workflow
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Header } from "@/components/header";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -81,14 +78,66 @@ export default function Home() {
     setEditingConfig(null);
   };
 
-  // 计算下次执行时间
+  // 计算下次执行时间的函数
   const getNextRunTime = (cronExpression) => {
-    // 简单的 cron 解析示例，实际项目中应使用专业的 cron 库
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
-    return tomorrow.toLocaleString('zh-CN');
+    if (!cronExpression) return '';
+
+    try {
+      // 简单的 cron 解析实现
+      const parts = cronExpression.trim().split(/\s+/);
+      if (parts.length !== 5) {
+        return '无效的 cron 表达式';
+      }
+
+      const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+      const now = new Date();
+      const nextRun = new Date(now);
+
+      // 处理分钟
+      if (minute !== '*') {
+        const targetMinute = parseInt(minute);
+        if (!isNaN(targetMinute) && targetMinute >= 0 && targetMinute <= 59) {
+          nextRun.setMinutes(targetMinute);
+          nextRun.setSeconds(0);
+          nextRun.setMilliseconds(0);
+
+          if (nextRun <= now) {
+            nextRun.setHours(nextRun.getHours() + 1);
+          }
+        }
+      }
+
+      // 处理小时
+      if (hour !== '*') {
+        const targetHour = parseInt(hour);
+        if (!isNaN(targetHour) && targetHour >= 0 && targetHour <= 23) {
+          nextRun.setHours(targetHour);
+
+          if (nextRun <= now) {
+            nextRun.setDate(nextRun.getDate() + 1);
+          }
+        }
+      }
+
+      // 确保下次执行时间在未来
+      if (nextRun <= now) {
+        if (minute !== '*') {
+          nextRun.setHours(nextRun.getHours() + 1);
+        } else {
+          nextRun.setMinutes(nextRun.getMinutes() + 1);
+        }
+      }
+
+      return nextRun.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return '计算失败';
+    }
   };
 
   // 处理表单提交
