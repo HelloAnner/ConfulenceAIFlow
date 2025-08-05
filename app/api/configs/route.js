@@ -12,6 +12,7 @@ export async function GET() {
       data: configs 
     });
   } catch (error) {
+    console.error('获取配置失败:', error);
     return NextResponse.json(
       { success: false, error: ' Get configs failed ' },
       { status: 500 }
@@ -23,7 +24,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, confluenceUrl, description, notificationType, webhookUrl } = body;
+    const { title, confluenceUrl, description, notificationType, webhookUrl, pageType, cronExpression } = body;
 
     // 验证必填字段
     if (!title || !confluenceUrl || !description) {
@@ -34,16 +35,14 @@ export async function POST(request) {
     }
 
     // 创建新配置
-    const newConfig = {
-      id: Date.now(),
+    const configData = {
       title,
       confluenceUrl,
       description,
       notificationType: notificationType || 'wechat',
       webhookUrl: webhookUrl || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: 'active'
+      pageType: pageType || 'current',
+      cronExpression: cronExpression || ''
     };
 
     // 持久化到文件中
@@ -55,8 +54,9 @@ export async function POST(request) {
       message: '配置创建成功'
     });
   } catch (error) {
+    console.error('创建配置失败:', error);
     return NextResponse.json(
-      { success: false, error: '创建配置失败' },
+      { success: false, error: '创建配置失败: ' + error.message },
       { status: 500 }
     );
   }
@@ -66,7 +66,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, title, confluenceUrl, description, notificationType, webhookUrl } = body;
+    const { id, title, confluenceUrl, description, notificationType, webhookUrl, pageType, cronExpression } = body;
 
     // 验证必填字段
     if (!id || !title || !confluenceUrl || !description) {
@@ -76,33 +76,39 @@ export async function PUT(request) {
       );
     }
 
-    // 查找并更新配置
-    const configIndex = configs.findIndex(config => config.id === id);
-    if (configIndex === -1) {
-      return NextResponse.json(
-        { success: false, error: '配置不存在' },
-        { status: 404 }
-      );
-    }
-
-    configs[configIndex] = {
-      ...configs[configIndex],
+    // 更新配置
+    const updateData = {
       title,
       confluenceUrl,
       description,
       notificationType: notificationType || 'wechat',
       webhookUrl: webhookUrl || '',
-      updatedAt: new Date().toISOString()
+      pageType: pageType || 'current',
+      cronExpression: cronExpression || ''
     };
+
+    const updatedConfig = await configService.updateConfig(id, updateData);
+
+    // 更新调度器中的任务
+    if (schedulerService.isRunning) {
+      schedulerService.updateJob(updatedConfig);
+    }
 
     return NextResponse.json({
       success: true,
-      data: configs[configIndex],
+      data: updatedConfig,
       message: '配置更新成功'
     });
   } catch (error) {
+    console.error('更新配置失败:', error);
+    if (error.message === '配置不存在') {
+      return NextResponse.json(
+        { success: false, error: '配置不存在' },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
-      { success: false, error: '更新配置失败' },
+      { success: false, error: '更新配置失败: ' + error.message },
       { status: 500 }
     );
   }
@@ -121,24 +127,29 @@ export async function DELETE(request) {
       );
     }
 
-    // 查找并删除配置
-    const configIndex = configs.findIndex(config => config.id === id);
-    if (configIndex === -1) {
+    // 删除配置
+    const deletedConfig = await configService.deleteConfig(id);
+
+    // 从调度器中移除任务
+    if (schedulerService.isRunning) {
+      schedulerService.removeJob(id);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: deletedConfig,
+      message: '配置删除成功'
+    });
+  } catch (error) {
+    console.error('删除配置失败:', error);
+    if (error.message === '配置不存在') {
       return NextResponse.json(
         { success: false, error: '配置不存在' },
         { status: 404 }
       );
     }
-
-    configs.splice(configIndex, 1);
-
-    return NextResponse.json({
-      success: true,
-      message: '配置删除成功'
-    });
-  } catch (error) {
     return NextResponse.json(
-      { success: false, error: '删除配置失败' },
+      { success: false, error: '删除配置失败: ' + error.message },
       { status: 500 }
     );
   }
