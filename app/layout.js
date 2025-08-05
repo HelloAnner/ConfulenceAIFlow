@@ -3,6 +3,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+// 初始化服务（仅在服务端）
+if (typeof window === 'undefined') {
+  import('@/lib/startup').then(({ initializeServices }) => {
+    initializeServices().catch(console.error);
+  });
+}
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

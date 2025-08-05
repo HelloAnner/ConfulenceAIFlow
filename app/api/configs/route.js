@@ -1,12 +1,11 @@
-import fs from 'fs';
+import configService from '@/lib/configService';
+import schedulerService from '@/lib/schedulerService';
 import { NextResponse } from 'next/server';
 
 // GET - 获取所有配置
 export async function GET() {
   try {
-    // 从文件中读取配置
-    const data = fs.readFileSync('./data/configs.json');
-    configs = JSON.parse(data);
+    const configs = configService.getAllConfigs();
     return NextResponse.json({ 
       success: true, 
       data: configs 
@@ -14,7 +13,7 @@ export async function GET() {
   } catch (error) {
     console.error('获取配置失败:', error);
     return NextResponse.json(
-      { success: false, error: ' Get configs failed ' },
+      { success: false, error: '获取配置失败' },
       { status: 500 }
     );
   }
@@ -45,8 +44,11 @@ export async function POST(request) {
       cronExpression: cronExpression || ''
     };
 
-    // 持久化到文件中
-    fs.writeFileSync('./data/configs.json', JSON.stringify(configs, null, 2));
+    configService.addConfig(configData);
+    // 如果调度器正在运行，添加新任务
+    if (schedulerService.isRunning && newConfig.cronExpression) {
+      schedulerService.addJob(newConfig);
+    }
 
     return NextResponse.json({
       success: true,
