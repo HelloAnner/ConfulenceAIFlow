@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Confluence AI Flow",
-  description: "Confluence AI 赋能配置管理平台",
+  title: "KMS AI Flow",
+  description: "KMS AI 赋能平台",
 };
 
 export default function RootLayout({ children }) {

@@ -11,10 +11,10 @@ export function Header() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                Confluence AI Flow
+                KMS AI Flow
               </h1>
               <p className="text-sm text-gray-600">
-                智能内容处理与通知系统
+                KMS + AI 赋能平台
               </p>
             </div>
           </div>

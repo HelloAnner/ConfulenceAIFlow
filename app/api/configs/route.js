@@ -1,24 +1,25 @@
+import fs from 'fs';
 import { NextResponse } from 'next/server';
-
-// 模拟数据存储（实际项目中应该使用数据库）
-let configs = [];
 
 // GET - 获取所有配置
 export async function GET() {
   try {
+    // 从文件中读取配置
+    const data = fs.readFileSync('./data/configs.json');
+    configs = JSON.parse(data);
     return NextResponse.json({ 
       success: true, 
       data: configs 
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: '获取配置失败' },
+      { success: false, error: ' Get configs failed ' },
       { status: 500 }
     );
   }
 }
 
-// POST - 创建新配置
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -45,7 +46,8 @@ export async function POST(request) {
       status: 'active'
     };
 
-    configs.push(newConfig);
+    // 持久化到文件中
+    fs.writeFileSync('./data/configs.json', JSON.stringify(configs, null, 2));
 
     return NextResponse.json({
       success: true,

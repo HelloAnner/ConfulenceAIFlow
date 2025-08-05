@@ -1,5 +1,6 @@
 "use client";
 
+import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,24 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Bell,
   Bot,
   Brain,
+  Clock,
   Edit,
   FileText,
+  Globe,
   Plus,
   Settings,
   Trash2,
-  Workflow,
-  Zap,
-  Clock,
-  Globe,
-  Bell,
-  ChevronUp,
-  ChevronDown
+  Workflow
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Header } from "@/components/header";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -174,10 +171,11 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="flex h-[calc(100vh-80px)]">
+      <div className="flex justify-center px-4 py-6">
+        <div className="w-full max-w-6xl flex bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-140px)]">
         {/* 左侧配置列表 */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-6 border-b border-gray-200">
+        <div className="w-80 border-r border-gray-200 flex flex-col">
+          <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">配置列表</h2>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -365,23 +363,23 @@ export default function Home() {
         </div>
         
         {/* 右侧详情区域 */}
-        <div className="flex-1 bg-white">
+        <div className="flex-1 pl-4">
           {selectedConfig ? (
             <div className="h-full overflow-y-auto">
-              <div className="p-8">
+              <div className="p-4">
                 <div className="max-w-4xl">
                   {/* 配置标题 */}
-                  <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  <div className="mb-4">
+                    <h1 className="text-xl font-bold text-gray-900 mb-1">
                       {selectedConfig.title}
                     </h1>
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 text-sm">
                       创建于 {new Date(selectedConfig.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   
                   {/* 配置详情 */}
-                  <div className="space-y-8">
+                  <div className="space-y-4">
                     <Card>
                       <CardHeader>
                         <div className="flex items-center space-x-2">
@@ -389,16 +387,16 @@ export default function Home() {
                           <h3 className="text-lg font-semibold">页面配置</h3>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-3">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Confluence 页面地址</Label>
-                          <p className="mt-1 text-gray-900 bg-gray-50 p-3 rounded-lg break-all">
+                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-sm break-all">
                             {selectedConfig.confluenceUrl}
                           </p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-700">页面类型</Label>
-                          <p className="mt-1 text-gray-900">
+                          <p className="mt-1 text-gray-900 text-sm">
                             {selectedConfig.pageType === 'current' ? '当前页面内容' :
                              selectedConfig.pageType === 'all-children' ? '当前页面的全部子页面内容' :
                              '当前页面的最新子页面内容'}
@@ -417,7 +415,7 @@ export default function Home() {
                       <CardContent>
                         <div>
                           <Label className="text-sm font-medium text-gray-700">处理需求</Label>
-                          <p className="mt-1 text-gray-900 bg-gray-50 p-3 rounded-lg leading-relaxed">
+                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-sm leading-relaxed">
                             {selectedConfig.description}
                           </p>
                         </div>
@@ -431,15 +429,15 @@ export default function Home() {
                           <h3 className="text-lg font-semibold">通知配置</h3>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-3">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">通知方式</Label>
-                          <p className="mt-1 text-gray-900">企业微信</p>
+                          <p className="mt-1 text-gray-900 text-sm">企业微信</p>
                         </div>
                         {selectedConfig.webhookUrl && (
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Webhook URL</Label>
-                            <p className="mt-1 text-gray-900 bg-gray-50 p-3 rounded-lg break-all font-mono text-sm">
+                            <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded break-all font-mono text-xs">
                               {selectedConfig.webhookUrl}
                             </p>
                           </div>
@@ -454,16 +452,16 @@ export default function Home() {
                           <h3 className="text-lg font-semibold">执行计划</h3>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-3">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">执行周期</Label>
-                          <p className="mt-1 text-gray-900 font-mono">
+                          <p className="mt-1 text-gray-900 font-mono text-sm">
                             {selectedConfig.cronExpression || '0 9 * * 1-5'}
                           </p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-700">下次执行时间</Label>
-                          <p className="mt-1 text-gray-900">
+                          <p className="mt-1 text-gray-900 text-sm">
                             {selectedConfig.nextRunTime || getNextRunTime(selectedConfig.cronExpression || '0 9 * * 1-5')}
                           </p>
                         </div>
@@ -484,6 +482,7 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
