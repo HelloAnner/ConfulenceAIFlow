@@ -10,16 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import {
   Bell,
-  Bot,
   Brain,
   Clock,
   Edit,
-  FileText,
   Globe,
   Plus,
-  Settings,
-  Trash2,
-  Workflow
+  Trash2
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -42,26 +38,82 @@ export default function Home() {
     cronExpression: "0 9 * * 1-5"
   });
 
-  const menuItems = [
-    { icon: Workflow, label: 'AI 工作流', active: true },
-    { icon: Bot, label: '智能助手' },
-    { icon: Brain, label: '知识库' },
-    { icon: Settings, label: '系统设置' },
-    { icon: FileText, label: '文档管理' }
-  ];
-
-  // 从localStorage加载配置
+  // 从后台加载配置
   useEffect(() => {
-    const savedConfigs = localStorage.getItem('confluenceConfigs');
-    if (savedConfigs) {
-      setConfigs(JSON.parse(savedConfigs));
-    }
+    const fetchConfigs = async () => {
+      try {
+        const response = await fetch('/api/configs');
+        const result = await response.json();
+        if (result.success) {
+          setConfigs(result.data || []);
+        } else {
+          console.error('获取配置失败:', result.error);
+          toast.error('获取配置失败');
+        }
+      } catch (error) {
+        console.error('获取配置失败:', error);
+        toast.error('获取配置失败');
+      }
+    };
+
+    fetchConfigs();
   }, []);
 
-  // 保存配置到localStorage
-  const saveConfigs = (newConfigs) => {
-    localStorage.setItem('confluenceConfigs', JSON.stringify(newConfigs));
-    setConfigs(newConfigs);
+  // 保存单个配置
+  const saveConfig = async (config, isEdit = false) => {
+    try {
+      const method = isEdit ? 'PUT' : 'POST';
+      const response = await fetch('/api/configs', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // 重新获取配置列表
+        const configsResponse = await fetch('/api/configs');
+        const configsResult = await configsResponse.json();
+        if (configsResult.success) {
+          setConfigs(configsResult.data || []);
+        }
+        return result.data;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('保存配置失败:', error);
+      toast.error('保存配置失败: ' + error.message);
+      throw error;
+    }
+  };
+
+  // 删除配置
+  const deleteConfig = async (id) => {
+    try {
+      const response = await fetch(`/api/configs?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // 重新获取配置列表
+        const configsResponse = await fetch('/api/configs');
+        const configsResult = await configsResponse.json();
+        if (configsResult.success) {
+          setConfigs(configsResult.data || []);
+        }
+        return result.data;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('删除配置失败:', error);
+      toast.error('删除配置失败: ' + error.message);
+      throw error;
+    }
   };
 
   // 重置表单
@@ -151,43 +203,45 @@ export default function Home() {
       return;
     }
 
-    const newConfig = {
-      id: editingConfig ? editingConfig.id : Date.now(),
-      ...formData,
-      createdAt: editingConfig ? editingConfig.createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      nextRunTime: getNextRunTime(formData.cronExpression)
-    };
+    try {
+      const configData = {
+        ...formData,
+        ...(editingConfig && { id: editingConfig.id })
+      };
 
-    let newConfigs;
-    if (editingConfig) {
-      newConfigs = configs.map(config => 
-        config.id === editingConfig.id ? newConfig : config
-      );
-      toast.success("配置更新成功！");
-    } else {
-      newConfigs = [...configs, newConfig];
-      toast.success("配置创建成功！");
+      const savedConfig = await saveConfig(configData, !!editingConfig);
+
+      if (editingConfig) {
+        toast.success("配置更新成功！");
+      } else {
+        toast.success("配置创建成功！");
+      }
+
+      setSelectedConfig(savedConfig);
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      // 错误已在saveConfig中处理
+    } finally {
+      setIsLoading(false);
     }
-
-    saveConfigs(newConfigs);
-    setSelectedConfig(newConfig);
-    setIsDialogOpen(false);
-    resetForm();
-    setIsLoading(false);
   };
 
   // 删除配置
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('确定要删除这个配置吗？')) {
       return;
     }
-    const newConfigs = configs.filter(config => config.id !== id);
-    saveConfigs(newConfigs);
-    if (selectedConfig && selectedConfig.id === id) {
-      setSelectedConfig(null);
+
+    try {
+      await deleteConfig(id);
+      if (selectedConfig && selectedConfig.id === id) {
+        setSelectedConfig(null);
+      }
+      toast.success("配置删除成功！");
+    } catch (error) {
+      // 错误已在deleteConfig中处理
     }
-    toast.success("配置删除成功！");
   };
 
   // 编辑配置
@@ -213,11 +267,6 @@ export default function Home() {
   const toggleExpanded = (id) => {
     setExpandedConfig(expandedConfig === id ? null : id);
   };
-
-  const totalPages = Math.ceil(configs.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentConfigs = configs.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen bg-gray-50">

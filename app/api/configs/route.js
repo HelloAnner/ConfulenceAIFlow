@@ -44,7 +44,8 @@ export async function POST(request) {
       cronExpression: cronExpression || ''
     };
 
-    configService.addConfig(configData);
+    const newConfig = await configService.addConfig(configData);
+    
     // 如果调度器正在运行，添加新任务
     if (schedulerService.isRunning && newConfig.cronExpression) {
       schedulerService.addJob(newConfig);
