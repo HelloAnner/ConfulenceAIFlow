@@ -23,7 +23,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, confluenceUrl, description, notificationType, webhookUrl, pageType, cronExpression } = body;
+    const { title, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, cronExpression } = body;
 
     // 验证必填字段
     if (!title || !confluenceUrl || !description) {
@@ -40,6 +40,7 @@ export async function POST(request) {
       description,
       notificationType: notificationType || 'wechat',
       webhookUrl: webhookUrl || '',
+      notificationTemplate: notificationTemplate || '📋 AI分析报告\n\n{{content}}',
       pageType: pageType || 'current',
       cronExpression: cronExpression || ''
     };
@@ -69,7 +70,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, title, confluenceUrl, description, notificationType, webhookUrl, pageType, cronExpression } = body;
+    const { id, title, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, cronExpression } = body;
 
     // 验证必填字段
     if (!id || !title || !confluenceUrl || !description) {
@@ -86,6 +87,7 @@ export async function PUT(request) {
       description,
       notificationType: notificationType || 'wechat',
       webhookUrl: webhookUrl || '',
+      notificationTemplate: notificationTemplate || '📋 AI分析报告\n\n{{content}}',
       pageType: pageType || 'current',
       cronExpression: cronExpression || ''
     };

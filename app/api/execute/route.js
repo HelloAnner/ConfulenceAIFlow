@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import AIService from '../../../lib/aiService.js';
 import ConfluenceService from '../../../lib/confluenceService.js';
 import NotificationService from '../../../lib/notificationService.js';
+import configService from '../../../lib/configService.js';
+import schedulerService from '../../../lib/schedulerService.js';
 
 // 初始化服务实例
 const confluenceService = new ConfluenceService();
@@ -14,7 +16,26 @@ export async function POST(request) {
   
   try {
     const body = await request.json();
-    const { configId, confluenceUrl, description, notificationType, webhookUrl, pageType, manual = false } = body;
+    let { configId, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, manual = false } = body;
+
+    // 如果提供了configId，从数据库获取完整配置
+    if (configId) {
+      const config = configService.getConfigById(configId);
+      if (!config) {
+        return NextResponse.json(
+          { success: false, error: '配置不存在' },
+          { status: 404 }
+        );
+      }
+      
+      // 使用配置中的信息
+      confluenceUrl = confluenceUrl || config.confluenceUrl;
+      description = description || config.description;
+      notificationType = notificationType || config.notificationType;
+      webhookUrl = webhookUrl || config.webhookUrl;
+      notificationTemplate = notificationTemplate || config.notificationTemplate;
+      pageType = pageType || config.pageType;
+    }
 
     // 验证必填字段
     if (!confluenceUrl || !description) {
@@ -46,6 +67,13 @@ export async function POST(request) {
     let notificationResult = null;
     if (notificationType && webhookUrl) {
       console.log(`发送 ${notificationType} 通知...`);
+      
+      // 使用通知模板，替换{{content}}占位符
+      let notificationContent = analysisResult;
+      if (notificationTemplate) {
+        notificationContent = notificationTemplate.replace('{{content}}', analysisResult);
+      }
+      
       const title = configId ?
         `配置 ${configId} - AI 分析结果` :
         'Confluence AI 分析结果';
@@ -53,7 +81,7 @@ export async function POST(request) {
       notificationResult = await notificationService.sendNotification(
         notificationType,
         webhookUrl,
-        analysisResult,
+        notificationContent,
         title
       );
     }

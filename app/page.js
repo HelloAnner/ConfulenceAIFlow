@@ -14,7 +14,9 @@ import {
   Clock,
   Edit,
   Globe,
+  Play,
   Plus,
+  Search,
   Trash2
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -28,6 +30,7 @@ export default function Home() {
   const [editingConfig, setEditingConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     confluenceUrl: "",
@@ -35,6 +38,7 @@ export default function Home() {
     description: "",
     notificationType: "wechat",
     webhookUrl: "",
+    notificationTemplate: "📋 AI分析报告\n\n{{content}}",
     cronExpression: "0 9 * * 1-5"
   });
 
@@ -125,6 +129,7 @@ export default function Home() {
       description: "",
       notificationType: "wechat",
       webhookUrl: "",
+      notificationTemplate: "📋 AI分析报告\n\n{{content}}",
       cronExpression: "0 9 * * 1-5"
     });
     setEditingConfig(null);
@@ -253,6 +258,7 @@ export default function Home() {
       description: config.description,
       notificationType: config.notificationType,
       webhookUrl: config.webhookUrl || "",
+      notificationTemplate: config.notificationTemplate || "📋 AI分析报告\n\n{{content}}",
       cronExpression: config.cronExpression || "0 9 * * 1-5"
     });
     setEditingConfig(config);
@@ -268,6 +274,34 @@ export default function Home() {
     setExpandedConfig(expandedConfig === id ? null : id);
   };
 
+  // 立即触发执行
+  const handleTriggerNow = async (config) => {
+    if (!config) return;
+
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ configId: config.id })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('任务已触发执行！');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('触发执行失败:', error);
+      toast.error('触发执行失败: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -279,18 +313,30 @@ export default function Home() {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">配置列表</h2>
+            </div>
+            {/* 搜索框 */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="搜索配置..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {/* 新建按钮 */}
+            <div className="mb-4">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
-                    size="sm" 
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={resetForm}
                   >
-                    <Plus className="w-4 h-4 mr-1" />
-                    新建
+                    <Plus className="w-4 h-4 mr-2" />
+                    新建配置
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl bg-white">
+                <DialogContent className="sm:max-w-4xl max-h-[80vh] bg-white overflow-y-auto">
                    <DialogHeader>
                      <DialogTitle>
                        {editingConfig ? '编辑配置' : '新建配置'}
@@ -367,6 +413,20 @@ export default function Home() {
                       />
                     </div>
                     
+                      <div className="space-y-2">
+                        <Label htmlFor="notificationTemplate">通知模板</Label>
+                        <Textarea
+                          id="notificationTemplate"
+                          value={formData.notificationTemplate}
+                          onChange={(e) => setFormData({ ...formData, notificationTemplate: e.target.value })}
+                          placeholder="📋 AI分析报告\n\n{{content}}"
+                          className="min-h-24"
+                        />
+                        <p className="text-xs text-gray-500">
+                          使用  content  作为 AI 返回内容的占位符
+                        </p>
+                      </div>
+
                     <div className="space-y-2">
                        <Label htmlFor="cronExpression">执行周期 (Cron)</Label>
                        <Input
@@ -398,21 +458,30 @@ export default function Home() {
                 </DialogContent>
               </Dialog>
             </div>
-            <p className="text-sm text-gray-500">共 {configs.length} 个配置</p>
+            <p className="text-sm text-gray-500">共 {configs.filter(config => 
+              config.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              config.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            ).length} 个配置</p>
           </div>
           
           <div className="flex-1 overflow-y-auto">
-            {configs.length === 0 ? (
+            {configs.filter(config => 
+              config.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              config.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            ).length === 0 ? (
               <div className="p-6 text-center">
                 <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Brain className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500 mb-2">暂无配置</p>
-                <p className="text-xs text-gray-400">点击新建按钮创建配置</p>
+                <p className="text-sm text-gray-500 mb-2">{searchTerm ? '未找到匹配的配置' : '暂无配置'}</p>
+                <p className="text-xs text-gray-400">{searchTerm ? '尝试修改搜索关键词' : '点击新建按钮创建配置'}</p>
               </div>
             ) : (
               <div className="space-y-1 p-2">
-                {configs.map((config) => (
+                {configs.filter(config => 
+                  config.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  config.description?.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((config) => (
                   <div
                     key={config.id}
                     onClick={() => setSelectedConfig(config)}
@@ -467,37 +536,48 @@ export default function Home() {
         <div className="flex-1 pl-4">
           {selectedConfig ? (
             <div className="h-full overflow-y-auto">
-              <div className="p-4">
+              <div className="p-3">
                 <div className="max-w-4xl">
                   {/* 配置标题 */}
-                  <div className="mb-4">
-                    <h1 className="text-xl font-bold text-gray-900 mb-1">
-                      {selectedConfig.title}
-                    </h1>
-                    <p className="text-gray-500 text-sm">
-                      创建于 {new Date(selectedConfig.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
+                    <div className="mb-3 flex items-start justify-between">
+                      <div>
+                        <h1 className="text-lg font-bold text-gray-900 mb-1">
+                          {selectedConfig.title}
+                        </h1>
+                        <p className="text-gray-500 text-xs">
+                          创建于 {new Date(selectedConfig.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => handleTriggerNow(selectedConfig)}
+                        disabled={isLoading}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        {isLoading ? '执行中...' : '立即触发'}
+                      </Button>
+                    </div>
                   
                   {/* 配置详情 */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <Card>
-                      <CardHeader>
+                      <CardHeader className="pb-2">
                         <div className="flex items-center space-x-2">
-                          <Globe className="w-5 h-5 text-blue-600" />
-                          <h3 className="text-lg font-semibold">页面配置</h3>
+                          <Globe className="w-4 h-4 text-blue-600" />
+                          <h3 className="text-base font-semibold">页面配置</h3>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-3">
+                      <CardContent className="space-y-2 pt-0">
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">Confluence 页面地址</Label>
-                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-sm break-all">
+                          <Label className="text-xs font-medium text-gray-700">Confluence 页面地址</Label>
+                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-xs break-all">
                             {selectedConfig.confluenceUrl}
                           </p>
                         </div>
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">页面类型</Label>
-                          <p className="mt-1 text-gray-900 text-sm">
+                          <Label className="text-xs font-medium text-gray-700">页面类型</Label>
+                          <p className="mt-1 text-gray-900 text-xs">
                             {selectedConfig.pageType === 'current' ? '当前页面内容' :
                              selectedConfig.pageType === 'all-children' ? '当前页面的全部子页面内容' :
                              '当前页面的最新子页面内容'}
@@ -507,16 +587,16 @@ export default function Home() {
                     </Card>
                     
                     <Card>
-                      <CardHeader>
+                      <CardHeader className="pb-2">
                         <div className="flex items-center space-x-2">
-                          <Brain className="w-5 h-5 text-purple-600" />
-                          <h3 className="text-lg font-semibold">AI 处理配置</h3>
+                          <Brain className="w-4 h-4 text-purple-600" />
+                          <h3 className="text-base font-semibold">AI 处理配置</h3>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="pt-0">
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">处理需求</Label>
-                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-sm leading-relaxed">
+                          <Label className="text-xs font-medium text-gray-700">处理需求</Label>
+                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-xs leading-relaxed">
                             {selectedConfig.description}
                           </p>
                         </div>
@@ -524,45 +604,53 @@ export default function Home() {
                     </Card>
                     
                     <Card>
-                      <CardHeader>
+                      <CardHeader className="pb-2">
                         <div className="flex items-center space-x-2">
-                          <Bell className="w-5 h-5 text-green-600" />
-                          <h3 className="text-lg font-semibold">通知配置</h3>
+                          <Bell className="w-4 h-4 text-green-600" />
+                          <h3 className="text-base font-semibold">通知配置</h3>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-3">
+                      <CardContent className="space-y-2 pt-0">
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">通知方式</Label>
-                          <p className="mt-1 text-gray-900 text-sm">企业微信</p>
+                          <Label className="text-xs font-medium text-gray-700">通知方式</Label>
+                          <p className="mt-1 text-gray-900 text-xs">企业微信</p>
                         </div>
                         {selectedConfig.webhookUrl && (
                           <div>
-                            <Label className="text-sm font-medium text-gray-700">Webhook URL</Label>
+                            <Label className="text-xs font-medium text-gray-700">Webhook URL</Label>
                             <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded break-all font-mono text-xs">
                               {selectedConfig.webhookUrl}
                             </p>
                           </div>
                         )}
+                          {selectedConfig.notificationTemplate && (
+                            <div>
+                              <Label className="text-xs font-medium text-gray-700">通知模板</Label>
+                              <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-xs whitespace-pre-wrap">
+                                {selectedConfig.notificationTemplate}
+                              </p>
+                            </div>
+                          )}
                       </CardContent>
                     </Card>
                     
                     <Card>
-                      <CardHeader>
+                      <CardHeader className="pb-2">
                         <div className="flex items-center space-x-2">
-                          <Clock className="w-5 h-5 text-orange-600" />
-                          <h3 className="text-lg font-semibold">执行计划</h3>
+                          <Clock className="w-4 h-4 text-orange-600" />
+                          <h3 className="text-base font-semibold">执行计划</h3>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-3">
+                      <CardContent className="space-y-2 pt-0">
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">执行周期</Label>
-                          <p className="mt-1 text-gray-900 font-mono text-sm">
+                          <Label className="text-xs font-medium text-gray-700">执行周期</Label>
+                          <p className="mt-1 text-gray-900 font-mono text-xs">
                             {selectedConfig.cronExpression || '0 9 * * 1-5'}
                           </p>
                         </div>
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">下次执行时间</Label>
-                          <p className="mt-1 text-gray-900 text-sm">
+                          <Label className="text-xs font-medium text-gray-700">下次执行时间</Label>
+                          <p className="mt-1 text-gray-900 text-xs">
                             {selectedConfig.nextRunTime || getNextRunTime(selectedConfig.cronExpression || '0 9 * * 1-5')}
                           </p>
                         </div>
