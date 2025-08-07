@@ -2,6 +2,8 @@
 
 一个基于 Next.js 的智能 Confluence 内容分析和通知系统，集成了 LangChain AI 框架和企业微信机器人。
 
+![](public/main.png)
+
 ## 功能特性
 
 ### 🔧 配置管理
