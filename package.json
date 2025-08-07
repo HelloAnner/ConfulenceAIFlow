@@ -1,6 +1,7 @@
 {
   "name": "smart-mermaid",
   "version": "1.2.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -29,7 +30,6 @@
     "clsx": "^2.1.1",
     "codemirror": "^6.0.1",
     "codemirror-lang-mermaid": "^0.5.0",
-    "confluence-api": "^1.4.0",
     "docx": "^9.5.0",
     "fs-extra": "^11.3.0",
     "lucide-react": "^0.511.0",

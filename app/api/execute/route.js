@@ -48,14 +48,11 @@ export async function POST(request) {
 
     // 1. 获取 Confluence 内容
     console.log(`获取 Confluence 内容: ${confluenceUrl}`);
-    const confluenceData = await confluenceService.getContentByType(
+    const formattedContent = await confluenceService.getContentByType(
       confluenceUrl,
       pageType || 'current'
     );
-
-    // 2. 格式化内容用于 AI 分析
-    const formattedContent = confluenceService.formatPagesForAI(confluenceData);
-    console.log(`已格式化 ${confluenceData.totalPages} 个页面的内容`);
+    console.log('已获取并格式化页面内容和评论');
 
     // 3. AI 分析
     console.log('开始 AI 分析...');
@@ -92,12 +89,6 @@ export async function POST(request) {
     const result = {
       configId: configId || null,
       manual,
-      confluenceData: {
-        url: confluenceUrl,
-        pageType: confluenceData.pageType,
-        totalPages: confluenceData.totalPages,
-        retrievedAt: confluenceData.retrievedAt
-      },
       analysisResult,
       notificationResult,
       executionTime: `${executionTime}ms`,
