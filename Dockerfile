@@ -61,8 +61,8 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 
 # 设置正确的权限
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir .next && mkdir -p data
+RUN chown nextjs:nodejs .next && chown nextjs:nodejs data
 
 # 自动利用输出跟踪来减少镜像大小
 # https://nextjs.org/docs/advanced-features/output-file-tracing

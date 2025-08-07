@@ -11,5 +11,10 @@ services:
       - NODE_ENV=production
       - NEXT_PUBLIC_DAILY_USAGE_LIMIT=5
       - NEXT_PUBLIC_MAX_CHARS=20000
+    volumes:
+      # 映射数据目录到容器
+      - ./data:/app/data
+      # 映射环境变量文件到容器
+      - ./.env.local:/app/.env.local:ro
     restart: unless-stopped
     container_name: kms-ai-flow
