@@ -1,6 +1,6 @@
-// 测试配置管理功能的脚本
-import configService from './lib/configService.js';
-import schedulerService from './lib/schedulerService.js';
+// 测试配置服务
+import configService from './lib/configService';
+import schedulerService from './lib/schedulerService';
 
 async function testConfigManagement() {
   console.log('🧪 开始测试配置管理功能...');

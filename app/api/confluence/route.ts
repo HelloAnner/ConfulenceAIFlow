@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import ConfluenceService from '@/lib/confluenceService';
+import { NextRequest, NextResponse } from 'next/server';
+import ConfluenceService from '../../../lib/confluenceService';
 
-// POST - 获取Confluence页面内容
-export async function POST(request) {
+// POST - 测试Confluence连接
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { confluenceUrl, pageType = 'current', username, apiToken, baseUrl } = body;
@@ -31,7 +31,7 @@ export async function POST(request) {
       data: content,
       message: '获取Confluence内容成功'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取Confluence内容失败:', error);
     return NextResponse.json(
       { success: false, error: `获取内容失败: ${error.message}` },
@@ -41,7 +41,7 @@ export async function POST(request) {
 }
 
 // GET - 获取页面内容（通过查询参数）
-export async function GET(request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const confluenceUrl = searchParams.get('url');
@@ -62,7 +62,7 @@ export async function GET(request) {
       data: content,
       message: '获取Confluence内容成功'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取Confluence内容失败:', error);
     return NextResponse.json(
       { success: false, error: `获取内容失败: ${error.message}` },

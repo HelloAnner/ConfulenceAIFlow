@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 
 // 计算 cron 表达式的下次执行时间
-export function getNextRunTime(cronExpression) {
+export function getNextRunTime(cronExpression: string): string {
   try {
     if (!cronExpression || !cron.validate(cronExpression)) {
       return '无效的 cron 表达式';
@@ -94,23 +94,23 @@ export function getNextRunTime(cronExpression) {
       second: '2-digit'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('计算下次执行时间失败:', error);
     return '计算失败';
   }
 }
 
 // 验证 cron 表达式
-export function validateCronExpression(cronExpression) {
+export function validateCronExpression(cronExpression: string): boolean {
   try {
     return cron.validate(cronExpression);
-  } catch (error) {
+  } catch (error: any) {
     return false;
   }
 }
 
 // 获取 cron 表达式的描述
-export function describeCronExpression(cronExpression) {
+export function describeCronExpression(cronExpression: string): string {
   try {
     if (!validateCronExpression(cronExpression)) {
       return '无效的 cron 表达式';
@@ -136,7 +136,7 @@ export function describeCronExpression(cronExpression) {
     }
 
     return description;
-  } catch (error) {
+  } catch (error: any) {
     return '无法解析表达式';
   }
 }
@@ -162,7 +162,7 @@ export const cronTemplates = {
 };
 
 // 获取模板描述
-export function getTemplateDescription(templateKey) {
+export function getTemplateDescription(templateKey: string): string {
   const descriptions = {
     everyMinute: '每分钟',
     every5Minutes: '每5分钟',
@@ -182,5 +182,5 @@ export function getTemplateDescription(templateKey) {
     yearly: '每年1月1日午夜'
   };
   
-  return descriptions[templateKey] || '未知模板';
+  return descriptions[templateKey as keyof typeof descriptions] || '未知模板';
 }

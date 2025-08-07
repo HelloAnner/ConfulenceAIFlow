@@ -1,7 +1,7 @@
-import { clsx } from "clsx";
+import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge"
 
-export function cn(...inputs) {
+export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
@@ -10,7 +10,7 @@ export function cn(...inputs) {
  * @param {string} text - The input text to clean
  * @returns {string} - Cleaned text
  */
-export function cleanText(text) {
+export function cleanText(text: string): string {
   if (!text) return "";
   
   // Remove excessive whitespace
@@ -27,7 +27,7 @@ export function cleanText(text) {
  * @param {string} text - Text to count
  * @returns {number} - Character count
  */
-export function countCharacters(text) {
+export function countCharacters(text: string): number {
   return text ? text.length : 0;
 }
 
@@ -37,7 +37,7 @@ export function countCharacters(text) {
  * @param {number} limit - Maximum character limit
  * @returns {boolean} - Whether text is within limit
  */
-export function isWithinCharLimit(text, limit) {
+export function isWithinCharLimit(text: string, limit: number): boolean {
   return countCharacters(text) <= limit;
 }
 
@@ -46,7 +46,7 @@ export function isWithinCharLimit(text, limit) {
  * @param {number} bytes - Size in bytes
  * @returns {string} - Formatted size (e.g., "2.5 MB")
  */
-export function formatFileSize(bytes) {
+export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
   
   const k = 1024;
@@ -62,7 +62,7 @@ export function formatFileSize(bytes) {
  * @param {number} length - Maximum length
  * @returns {string} - Truncated text
  */
-export function truncateText(text, length = 100) {
+export function truncateText(text: string, length: number = 100): string {
   if (!text) return "";
   if (text.length <= length) return text;
   
@@ -74,11 +74,11 @@ export function truncateText(text, length = 100) {
  * @param {string} text - Text to copy
  * @returns {Promise<boolean>} - Success status
  */
-export async function copyToClipboard(text) {
+export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to copy text:", error);
     return false;
   }

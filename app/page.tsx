@@ -28,30 +28,32 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import type { Config, ExecutionRecord, Pagination, ExecutionStats, FormData, ApiResponse } from "@/types/index";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function Home() {
-  const [configs, setConfigs] = useState([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingConfig, setEditingConfig] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [executionRecords, setExecutionRecords] = useState([]);
-  const [nextRunTime, setNextRunTime] = useState(null);
-  const [loadingRecords, setLoadingRecords] = useState(false);
-  const [recordsPagination, setRecordsPagination] = useState({
+  const [configs, setConfigs] = useState<Config[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [editingConfig, setEditingConfig] = useState<Config | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedConfig, setSelectedConfig] = useState<Config | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [executionRecords, setExecutionRecords] = useState<ExecutionRecord[]>([]);
+  const [nextRunTime, setNextRunTime] = useState<string | null>(null);
+  const [loadingRecords, setLoadingRecords] = useState<boolean>(false);
+  const [recordsPagination, setRecordsPagination] = useState<Pagination>({
     currentPage: 1,
     pageSize: 10,
     totalRecords: 0,
-    totalPages: 0
+    totalPages: 0,
+    itemsPerPage: ITEMS_PER_PAGE
   });
-  const [recordsStats, setRecordsStats] = useState(null);
-  const [formData, setFormData] = useState({
+  const [recordsStats, setRecordsStats] = useState<ExecutionStats | null>(null);
+  const [formData, setFormData] = useState<FormData>({
     title: "",
     confluenceUrl: "",
-    pageType: "current",
+    pageType: "current" as const,
     description: "",
     notificationType: "wechat",
     webhookUrl: "",
@@ -71,7 +73,7 @@ export default function Home() {
           console.error('获取配置失败:', result.error);
           toast.error('获取配置失败');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('获取配置失败:', error);
         toast.error('获取配置失败');
       }
@@ -81,7 +83,7 @@ export default function Home() {
   }, []);
 
   // 保存单个配置
-  const saveConfig = async (config, isEdit = false) => {
+  const saveConfig = async (config: Config, isEdit: boolean = false): Promise<Config> => {
     try {
       const method = isEdit ? 'PUT' : 'POST';
       const response = await fetch('/api/configs', {
@@ -104,7 +106,7 @@ export default function Home() {
       } else {
         throw new Error(result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('保存配置失败:', error);
       toast.error('保存配置失败: ' + error.message);
       throw error;
@@ -112,7 +114,7 @@ export default function Home() {
   };
 
   // 删除配置
-  const deleteConfig = async (id) => {
+  const deleteConfig = async (id: string): Promise<any> => {
     try {
       const response = await fetch(`/api/configs?id=${id}`, {
         method: 'DELETE'
@@ -130,7 +132,7 @@ export default function Home() {
       } else {
         throw new Error(result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除配置失败:', error);
       toast.error('删除配置失败: ' + error.message);
       throw error;
@@ -153,7 +155,7 @@ export default function Home() {
   };
 
   // 计算下次执行时间的函数
-  const getNextRunTime = (cronExpression) => {
+  const getNextRunTime = (cronExpression: string): string => {
     if (!cronExpression) return '';
 
     try {
@@ -209,13 +211,13 @@ export default function Home() {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (error) {
+    } catch (error: any) {
       return '计算失败';
     }
   };
 
   // 处理表单提交
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -231,7 +233,7 @@ export default function Home() {
         ...(editingConfig && { id: editingConfig.id })
       };
 
-      const savedConfig = await saveConfig(configData, !!editingConfig);
+      const savedConfig = await saveConfig(configData as Config, !!editingConfig);
 
       if (editingConfig) {
         toast.success("配置更新成功！");
@@ -242,7 +244,7 @@ export default function Home() {
       setSelectedConfig(savedConfig);
       setIsDialogOpen(false);
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       // 错误已在saveConfig中处理
     } finally {
       setIsLoading(false);
@@ -250,7 +252,7 @@ export default function Home() {
   };
 
   // 删除配置
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('确定要删除这个配置吗？')) {
       return;
     }
@@ -261,19 +263,19 @@ export default function Home() {
         setSelectedConfig(null);
       }
       toast.success("配置删除成功！");
-    } catch (error) {
+    } catch (error: any) {
       // 错误已在deleteConfig中处理
     }
   };
 
   // 编辑配置
-  const handleEdit = (config) => {
+  const handleEdit = (config: Config) => {
     setFormData({
       title: config.title,
       confluenceUrl: config.confluenceUrl,
       pageType: config.pageType || "current",
-      description: config.description,
-      notificationType: config.notificationType,
+      description: config.description || "",
+      notificationType: config.notificationType || "wechat",
       webhookUrl: config.webhookUrl || "",
       notificationTemplate: config.notificationTemplate || "📋 AI分析报告\n\n{{content}}",
       cronExpression: config.cronExpression || "0 9 * * 1-5"
@@ -283,16 +285,16 @@ export default function Home() {
   };
 
   // 分页逻辑
-  const [currentPage, setCurrentPage] = useState(1);
-  const [expandedConfig, setExpandedConfig] = useState(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [expandedConfig, setExpandedConfig] = useState<string | null>(null);
 
   // 切换展开状态
-  const toggleExpanded = (id) => {
+  const toggleExpanded = (id: string) => {
     setExpandedConfig(expandedConfig === id ? null : id);
   };
 
   // 立即触发执行
-  const handleTriggerNow = async (config) => {
+  const handleTriggerNow = async (config: Config) => {
     if (!config) return;
 
     try {
@@ -310,21 +312,21 @@ export default function Home() {
         toast.success('任务已触发执行！');
         // 重新获取执行记录
         if (selectedConfig && selectedConfig.id === config.id) {
-          fetchExecutionRecords(config.id);
+          fetchExecutionRecords(String(config.id));
         }
       } else {
         throw new Error(result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('触发执行失败:', error);
-      toast.error('触发执行失败: ' + error.message);
+      toast.error('触发执行失败: ' + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
   // 获取执行记录
-  const fetchExecutionRecords = async (configId, page = 1, pageSize = 10) => {
+  const fetchExecutionRecords = async (configId: string, page = 1, pageSize = 10) => {
     if (!configId) return;
 
     try {
@@ -354,7 +356,7 @@ export default function Home() {
         });
         setRecordsStats(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取执行记录失败:', error);
       setExecutionRecords([]);
       setNextRunTime(null);
@@ -371,16 +373,16 @@ export default function Home() {
   };
 
   // 分页处理函数
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage: number) => {
     if (selectedConfig && newPage >= 1 && newPage <= recordsPagination.totalPages) {
-      fetchExecutionRecords(selectedConfig.id, newPage, recordsPagination.pageSize);
+      fetchExecutionRecords(selectedConfig.id as string, newPage, recordsPagination.pageSize as number);
     }
   };
 
   // 当选择配置时获取执行记录
   useEffect(() => {
     if (selectedConfig) {
-      fetchExecutionRecords(selectedConfig.id, 1, 10);
+      fetchExecutionRecords(selectedConfig.id as string, 1, 10);
     } else {
       setExecutionRecords([]);
       setNextRunTime(null);
@@ -409,10 +411,11 @@ export default function Home() {
               {/* 搜索框 */}
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
+                <Input 
+                  type="text"
                   placeholder="搜索配置..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -420,7 +423,9 @@ export default function Home() {
               <div className="mb-4">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button
+                    <Button 
+                      variant="default"
+                      size="sm"
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                       onClick={resetForm}
                     >
@@ -429,15 +434,16 @@ export default function Home() {
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-4xl max-h-[80vh] bg-white overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>
+                    <DialogHeader className="bg-gray-50 p-4 border-b border-gray-200">
+                      <DialogTitle className="text-lg font-semibold text-gray-900">
                         {editingConfig ? '编辑配置' : '新建配置'}
                       </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="title">配置名称</Label>
-                        <Input
+                        <Label className="text-gray-700" htmlFor="title">配置名称</Label>
+                        <Input 
+                          type="text"
                           id="title"
                           value={formData.title}
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -447,36 +453,37 @@ export default function Home() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="confluenceUrl">Confluence 页面地址</Label>
-                        <Input
+                        <Label className="text-gray-700" htmlFor="confluenceUrl">Confluence 页面地址</Label>
+                        <Input 
+                          type="text"
                           id="confluenceUrl"
                           value={formData.confluenceUrl}
-                          onChange={(e) => setFormData({ ...formData, confluenceUrl: e.target.value })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, confluenceUrl: e.target.value })}
                           placeholder="https://your-domain.atlassian.net/wiki/..."
                           required
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="pageType">页面类型</Label>
-                        <Select value={formData.pageType} onValueChange={(value) => setFormData({ ...formData, pageType: value })}>
-                          <SelectTrigger>
-                            <SelectValue />
+                        <Label className="text-gray-700" htmlFor="pageType">页面类型</Label>
+                        <Select value={formData.pageType} onValueChange={(value: "current" | "specific") => setFormData({ ...formData, pageType: value })}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue className="text-gray-700" />
                           </SelectTrigger>
                           <SelectContent className="bg-white">
-                            <SelectItem value="current">当前页面内容</SelectItem>
-                            <SelectItem value="all-children">当前页面的全部子页面内容</SelectItem>
-                            <SelectItem value="latest-children">当前页面的最新子页面内容</SelectItem>
+                            <SelectItem className="text-gray-700" value="current">当前页面内容</SelectItem>
+                            <SelectItem className="text-gray-700" value="all-children">当前页面的全部子页面内容</SelectItem>
+                            <SelectItem className="text-gray-700" value="latest-children">当前页面的最新子页面内容</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="description">AI 处理需求</Label>
+                        <Label className="text-gray-700" htmlFor="description">AI 处理需求</Label>
                         <Textarea
                           id="description"
                           value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
                           placeholder="描述您希望 AI 如何处理这些内容..."
                           className="min-h-32"
                           required
@@ -484,33 +491,34 @@ export default function Home() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="notificationType">通知方式</Label>
-                        <Select value={formData.notificationType} onValueChange={(value) => setFormData({ ...formData, notificationType: value })}>
-                          <SelectTrigger>
-                            <SelectValue />
+                        <Label className="text-gray-700" htmlFor="notificationType">通知方式</Label>
+                        <Select value={formData.notificationType} onValueChange={(value: "wechat" | "email") => setFormData({ ...formData, notificationType: value })}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue className="text-gray-700" />
                           </SelectTrigger>
                           <SelectContent className="bg-white">
-                            <SelectItem value="wechat">企业微信</SelectItem>
+                            <SelectItem className="text-gray-700" value="wechat">企业微信</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="webhookUrl">Webhook URL</Label>
-                        <Input
+                        <Label className="text-gray-700" htmlFor="webhookUrl">Webhook URL</Label>
+                        <Input 
+                          type="text"
                           id="webhookUrl"
                           value={formData.webhookUrl}
-                          onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, webhookUrl: e.target.value })}
                           placeholder="请输入企业微信 Webhook URL"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="notificationTemplate">通知模板</Label>
+                        <Label className="text-gray-700" htmlFor="notificationTemplate">通知模板</Label>
                         <Textarea
                           id="notificationTemplate"
                           value={formData.notificationTemplate}
-                          onChange={(e) => setFormData({ ...formData, notificationTemplate: e.target.value })}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, notificationTemplate: e.target.value })}
                           placeholder="📋 AI分析报告\n\n{{content}}"
                           className="min-h-24"
                         />
@@ -520,11 +528,12 @@ export default function Home() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="cronExpression">执行周期 (Cron)</Label>
-                        <Input
+                        <Label className="text-gray-700" htmlFor="cronExpression">执行周期 (Cron)</Label>
+                        <Input 
+                          type="text"
                           id="cronExpression"
                           value={formData.cronExpression}
-                          onChange={(e) => setFormData({ ...formData, cronExpression: e.target.value })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, cronExpression: e.target.value })}
                           placeholder="0 9 * * 1-5"
                         />
                         {formData.cronExpression && (
@@ -535,14 +544,17 @@ export default function Home() {
                       </div>
 
                       <div className="flex justify-end space-x-2 pt-4">
-                        <Button
+                        <Button 
                           type="button"
                           variant="outline"
                           onClick={() => setIsDialogOpen(false)}
                         >
                           取消
                         </Button>
-                        <Button type="submit">
+                        <Button 
+                          type="submit"
+                          className="bg-blue-600 text-white hover:bg-blue-700"
+                        >
                           {editingConfig ? '更新' : '创建'}
                         </Button>
                       </div>
@@ -608,7 +620,7 @@ export default function Home() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(config.id);
+                              handleDelete(String(config.id));
                             }}
                             className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                           >
@@ -743,11 +755,11 @@ export default function Home() {
                                           <Timer className="w-3 h-3" />
                                           <span>{record.executionTime}</span>
                                         </div>
-                                        <span>{new Date(record.executedAt).toLocaleString('zh-CN')}</span>
+                                        <span>{record.executedAt ? new Date(record.executedAt).toLocaleString('zh-CN') : '未知时间'}</span>
                                       </div>
                                     </div>
 
-                                    {record.status === 'failed' && record.error && (
+                                    {record.status === 'error' && record.error && (
                                       <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
                                         <span className="font-medium text-red-700">错误信息:</span>
                                         <p className="text-red-600 mt-1">{record.error}</p>
@@ -811,7 +823,7 @@ export default function Home() {
 
                                     <div className="flex items-center space-x-1">
                                       {Array.from({ length: Math.min(5, recordsPagination.totalPages) }, (_, i) => {
-                                        let pageNum;
+                                        let pageNum: number;
                                         if (recordsPagination.totalPages <= 5) {
                                           pageNum = i + 1;
                                         } else if (recordsPagination.currentPage <= 3) {

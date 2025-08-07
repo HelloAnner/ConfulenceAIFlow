@@ -1,6 +1,7 @@
 import configService from '@/lib/configService';
 import schedulerService from '@/lib/schedulerService';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import type { Config } from '@/types';
 
 // GET - 获取所有配置
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
       success: true, 
       data: configs 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取配置失败:', error);
     return NextResponse.json(
       { success: false, error: '获取配置失败' },
@@ -20,7 +21,7 @@ export async function GET() {
 }
 
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { title, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, cronExpression } = body;
@@ -45,7 +46,7 @@ export async function POST(request) {
       cronExpression: cronExpression || ''
     };
 
-    const newConfig = await configService.addConfig(configData);
+    const newConfig = await configService.addConfig(configData as Config);
     
     // 如果调度器正在运行，添加新任务
     if (schedulerService.isRunning && newConfig.cronExpression) {
@@ -57,7 +58,7 @@ export async function POST(request) {
       data: newConfig,
       message: '配置创建成功'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('创建配置失败:', error);
     return NextResponse.json(
       { success: false, error: '创建配置失败: ' + error.message },
@@ -67,7 +68,7 @@ export async function POST(request) {
 }
 
 // PUT - 更新配置
-export async function PUT(request) {
+export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, title, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, cronExpression } = body;
@@ -104,7 +105,7 @@ export async function PUT(request) {
       data: updatedConfig,
       message: '配置更新成功'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('更新配置失败:', error);
     if (error.message === '配置不存在') {
       return NextResponse.json(
@@ -113,17 +114,18 @@ export async function PUT(request) {
       );
     }
     return NextResponse.json(
-      { success: false, error: '更新配置失败: ' + error.message },
+      { success: false, error: '更新配置失败: ' + (error as any).message },
       { status: 500 }
     );
   }
 }
 
 // DELETE - 删除配置
-export async function DELETE(request) {
+export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const id = parseInt(searchParams.get('id'));
+    const idParam = searchParams.get('id');
+    const id = idParam ? parseInt(idParam) : null;
 
     if (!id) {
       return NextResponse.json(
@@ -145,7 +147,7 @@ export async function DELETE(request) {
       data: deletedConfig,
       message: '配置删除成功'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('删除配置失败:', error);
     if (error.message === '配置不存在') {
       return NextResponse.json(

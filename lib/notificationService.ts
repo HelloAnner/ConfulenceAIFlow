@@ -1,10 +1,12 @@
 class NotificationService {
+  private supportedTypes: string[];
+
   constructor() {
     this.supportedTypes = ['wechat', 'slack', 'email', 'webhook'];
   }
 
   // 发送通知
-  async sendNotification(type, webhookUrl, content, title) {
+  async sendNotification(type: string, webhookUrl: string, content: any, title: string): Promise<any> {
     try {
       if (!this.supportedTypes.includes(type)) {
         throw new Error(`不支持的通知类型: ${type}`);
@@ -60,17 +62,17 @@ class NotificationService {
         response: responseData
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('发送通知失败:', error);
       return { 
         success: false, 
-        error: error.message 
+        error: (error as Error).message
       };
     }
   }
 
   // 格式化微信通知
-  formatForWechat(content, title) {
+  formatForWechat(content: any, title: string): any {
     // 处理换行符：将 \n 转换为 markdown 格式的换行
     let formattedContent = content;
     if (typeof content === 'string') {
@@ -87,7 +89,7 @@ class NotificationService {
   }
 
   // 格式化Slack通知
-  formatForSlack(content, title) {
+  formatForSlack(content: any, title: string): any {
     let textContent;
     if (typeof content === 'object') {
       textContent = this.formatAnalysisResultToText(content);
@@ -117,7 +119,7 @@ class NotificationService {
   }
 
   // 格式化邮件通知
-  formatForEmail(content, title) {
+  formatForEmail(content: any, title: string): any {
     let htmlContent;
     if (typeof content === 'object') {
       htmlContent = this.formatAnalysisResultToHtml(content);
@@ -133,7 +135,7 @@ class NotificationService {
   }
 
   // 格式化通用Webhook通知
-  formatForWebhook(content, title) {
+  formatForWebhook(content: any, title: string): any {
     return {
       title: title,
       content: content,
@@ -143,7 +145,7 @@ class NotificationService {
   }
 
   // 将AI分析结果格式化为Markdown
-  formatAnalysisResultToMarkdown(result) {
+  formatAnalysisResultToMarkdown(result: any): string {
     let markdown = '';
     
     if (result.summary) {
@@ -152,7 +154,7 @@ class NotificationService {
     
     if (result.keyPoints && result.keyPoints.length > 0) {
       markdown += `## 🔍 关键信息\n`;
-      result.keyPoints.forEach((point, index) => {
+      result.keyPoints.forEach((point: string, index: number) => {
         markdown += `${index + 1}. ${point}\n`;
       });
       markdown += '\n';
@@ -160,7 +162,7 @@ class NotificationService {
     
     if (result.actionItems && result.actionItems.length > 0) {
       markdown += `## ✅ 行动项\n`;
-      result.actionItems.forEach((item, index) => {
+      result.actionItems.forEach((item: { priority: string; title: string; description?: string; estimatedEffort?: string }, index: number) => {
         const priorityEmoji = item.priority === 'high' ? '🔴' : item.priority === 'medium' ? '🟡' : '🟢';
         markdown += `${index + 1}. ${priorityEmoji} **${item.title}**\n`;
         if (item.description) {
@@ -175,7 +177,7 @@ class NotificationService {
     
     if (result.risks && result.risks.length > 0) {
       markdown += `## ⚠️ 风险提醒\n`;
-      result.risks.forEach((risk, index) => {
+      result.risks.forEach((risk: { description: string; mitigation?: string }, index: number) => {
         markdown += `${index + 1}. ${risk.description}\n`;
         if (risk.mitigation) {
           markdown += `   💡 缓解措施: ${risk.mitigation}\n`;
@@ -186,7 +188,7 @@ class NotificationService {
     
     if (result.recommendations && result.recommendations.length > 0) {
       markdown += `## 💡 建议\n`;
-      result.recommendations.forEach((rec, index) => {
+      result.recommendations.forEach((rec: string, index: number) => {
         markdown += `${index + 1}. ${rec}\n`;
       });
       markdown += '\n';
@@ -194,7 +196,7 @@ class NotificationService {
     
     if (result.nextSteps && result.nextSteps.length > 0) {
       markdown += `## 🚀 下一步行动\n`;
-      result.nextSteps.forEach((step, index) => {
+      result.nextSteps.forEach((step: string, index: number) => {
         markdown += `${index + 1}. ${step}\n`;
       });
       markdown += '\n';
@@ -209,14 +211,14 @@ class NotificationService {
   }
 
   // 将AI分析结果格式化为纯文本
-  formatAnalysisResultToText(result) {
+  formatAnalysisResultToText(result: any): string {
     return this.formatAnalysisResultToMarkdown(result)
       .replace(/[#*_`]/g, '') // 移除markdown标记
       .replace(/\n\n+/g, '\n\n'); // 合并多个换行
   }
 
   // 将AI分析结果格式化为HTML
-  formatAnalysisResultToHtml(result) {
+  formatAnalysisResultToHtml(result: any): string {
     let html = '<div style="font-family: Arial, sans-serif; line-height: 1.6;">';
     
     if (result.summary) {
@@ -225,7 +227,7 @@ class NotificationService {
     
     if (result.keyPoints && result.keyPoints.length > 0) {
       html += '<h2>🔍 关键信息</h2><ul>';
-      result.keyPoints.forEach(point => {
+      result.keyPoints.forEach((point: string) => {
         html += `<li>${point}</li>`;
       });
       html += '</ul>';
@@ -233,7 +235,7 @@ class NotificationService {
     
     if (result.actionItems && result.actionItems.length > 0) {
       html += '<h2>✅ 行动项</h2><ul>';
-      result.actionItems.forEach(item => {
+      result.actionItems.forEach((item: { priority: string; title: string; description?: string; estimatedEffort?: string }) => {
         const priorityColor = item.priority === 'high' ? 'red' : item.priority === 'medium' ? 'orange' : 'green';
         html += `<li><strong style="color: ${priorityColor}">${item.title}</strong>`;
         if (item.description) {
@@ -246,7 +248,7 @@ class NotificationService {
     
     if (result.risks && result.risks.length > 0) {
       html += '<h2>⚠️ 风险提醒</h2><ul>';
-      result.risks.forEach(risk => {
+      result.risks.forEach((risk: { description: string; mitigation?: string }) => {
         html += `<li>${risk.description}`;
         if (risk.mitigation) {
           html += `<br><em>缓解措施: ${risk.mitigation}</em>`;
@@ -258,7 +260,7 @@ class NotificationService {
     
     if (result.recommendations && result.recommendations.length > 0) {
       html += '<h2>💡 建议</h2><ul>';
-      result.recommendations.forEach(rec => {
+      result.recommendations.forEach((rec: string) => {
         html += `<li>${rec}</li>`;
       });
       html += '</ul>';
@@ -273,7 +275,7 @@ class NotificationService {
   }
 
   // 批量发送通知
-  async sendBatchNotifications(notifications) {
+  async sendBatchNotifications(notifications: any[]): Promise<any[]> {
     const results = [];
     
     for (const notification of notifications) {

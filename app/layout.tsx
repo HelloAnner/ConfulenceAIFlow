@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
 import "./globals.css";
 
 // 初始化服务（仅在服务端）
@@ -20,12 +21,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "KMS AI Flow",
   description: "KMS AI 赋能平台",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ 
+  children 
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body

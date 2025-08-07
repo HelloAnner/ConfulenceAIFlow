@@ -1,10 +1,17 @@
 import cron from 'node-cron';
-import AIService from './aiService.js';
-import configService from './configService.js';
-import ConfluenceService from './confluenceService.js';
-import NotificationService from './notificationService.js';
+import AIService from './aiService';
+import configService from './configService';
+import ConfluenceService from './confluenceService';
+import NotificationService from './notificationService';
+import { Config } from '../types';
 
 class SchedulerService {
+  private jobs: Map<string | number, any>;
+  private confluenceService: ConfluenceService;
+  private aiService: AIService;
+  private notificationService: NotificationService;
+  public isRunning: boolean;
+
   constructor() {
     this.jobs = new Map(); // 存储所有定时任务
     this.confluenceService = new ConfluenceService();
@@ -62,7 +69,7 @@ class SchedulerService {
   }
 
   // 添加单个定时任务
-  addJob(config) {
+  addJob(config: Config): void {
     try {
       if (!config.cronExpression) {
         console.warn(`配置 ${config.id} 没有设置 cron 表达式，跳过`);
@@ -84,20 +91,20 @@ class SchedulerService {
       const job = cron.schedule(config.cronExpression, async () => {
         await this.executeTask(config);
       }, {
-        scheduled: true,
+        // 由于 node-cron 的 TaskOptions 类型定义中不包含 scheduled 属性，这里移除该属性
         timezone: 'Asia/Shanghai'
       });
 
       this.jobs.set(config.id, job);
       console.log(`已添加配置 ${config.id} (${config.title}) 的定时任务: ${config.cronExpression}`);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`添加定时任务失败 (配置 ${config.id}):`, error);
     }
   }
 
   // 移除定时任务
-  removeJob(configId) {
+  removeJob(configId: string | number): void {
     const job = this.jobs.get(configId);
     if (job) {
       job.destroy();
@@ -107,7 +114,7 @@ class SchedulerService {
   }
 
   // 更新定时任务
-  updateJob(config) {
+  updateJob(config: Config): void {
     this.removeJob(config.id);
     if (config.status === 'active' && config.cronExpression) {
       this.addJob(config);
@@ -115,7 +122,7 @@ class SchedulerService {
   }
 
   // 执行单个任务
-  async executeTask(config) {
+  async executeTask(config: Config): Promise<any> {
     const startTime = Date.now();
     console.log(`开始执行任务: ${config.title} (ID: ${config.id})`);
 
@@ -132,7 +139,7 @@ class SchedulerService {
       console.log('开始 AI 分析...');
       const analysisResult = await this.aiService.analyzeContent(
         confluenceData,
-        config.description
+        config.description || ''
       );
 
       // 3. 发送通知
@@ -172,7 +179,7 @@ class SchedulerService {
       console.log(`任务执行成功: ${config.title} (耗时: ${executionTime}ms)`);
       return executionRecord;
 
-    } catch (error) {
+    } catch (error: any) {
       const executionTime = Date.now() - startTime;
       console.error(`任务执行失败: ${config.title}`, error);
 
@@ -182,7 +189,7 @@ class SchedulerService {
         configTitle: config.title,
         executedAt: new Date().toISOString(),
         executionTime: `${executionTime}ms`,
-        error: error.message,
+        error: (error as Error).message,
         status: 'failed'
       };
 
@@ -194,10 +201,10 @@ class SchedulerService {
           await this.notificationService.sendNotification(
             config.notificationType,
             config.webhookUrl,
-            `❌ 任务执行失败\n\n**配置**: ${config.title}\n**错误**: ${error.message}\n**时间**: ${new Date().toLocaleString('zh-CN')}`,
+            `❌ 任务执行失败\n\n**配置**: ${config.title}\n**错误**: ${(error as Error).message}\n**时间**: ${new Date().toLocaleString('zh-CN')}`,
             `${config.title} - 执行失败`
           );
-        } catch (notifyError) {
+        } catch (notifyError: any) {
           console.error('发送错误通知失败:', notifyError);
         }
       }
@@ -207,7 +214,7 @@ class SchedulerService {
   }
 
   // 手动执行任务
-  async executeTaskManually(configId) {
+  async executeTaskManually(configId: string | number): Promise<any> {
     const config = await configService.getConfigById(configId);
     if (!config) {
       throw new Error(`配置不存在: ${configId}`);
@@ -218,7 +225,7 @@ class SchedulerService {
   }
 
   // 保存执行记录
-  async saveExecutionRecord(record) {
+  async saveExecutionRecord(record: any): Promise<void> {
     try {
       const fs = await import('fs-extra');
       const path = await import('path');
@@ -248,7 +255,7 @@ class SchedulerService {
       if (await fs.pathExists(filepath)) {
         try {
           records = await fs.readJson(filepath);
-        } catch (error) {
+        } catch (error: any) {
           console.error(`读取记录文件失败: ${filepath}`, error);
           records = [];
         }
@@ -275,13 +282,13 @@ class SchedulerService {
       await this.updateConfigStats(record.configId, enhancedRecord);
       
       console.log(`执行记录已保存: ${filepath}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('保存执行记录失败:', error);
     }
   }
 
   // 更新配置统计信息
-  async updateConfigStats(configId, record) {
+  async updateConfigStats(configId: string | number, record: any): Promise<void> {
     try {
       const fs = await import('fs-extra');
       const path = await import('path');
@@ -304,7 +311,7 @@ class SchedulerService {
       if (await fs.pathExists(statsFile)) {
         try {
           stats = await fs.readJson(statsFile);
-        } catch (error) {
+        } catch (error: any) {
           console.error('读取统计文件失败:', error);
         }
       }
@@ -333,13 +340,13 @@ class SchedulerService {
       }
       
       await fs.writeJson(statsFile, stats, { spaces: 2 });
-    } catch (error) {
+    } catch (error: any) {
       console.error('更新配置统计信息失败:', error);
     }
   }
 
   // 获取任务状态
-  getJobStatus(configId) {
+  getJobStatus(configId: string | number): { exists: boolean; running?: boolean; scheduled?: boolean } {
     const job = this.jobs.get(configId);
     if (!job) {
       return { exists: false };
@@ -353,14 +360,20 @@ class SchedulerService {
   }
 
   // 获取所有任务状态
-  async getAllJobsStatus() {
+  async getAllJobsStatus(): Promise<any> {
     const status = {
       schedulerRunning: this.isRunning,
       totalJobs: this.jobs.size,
-      jobs: []
+      jobs: [] as any[]
     };
 
-    const jobPromises = [];
+    const jobPromises: Promise<{
+      configId: string | number;
+      configTitle: string;
+      cronExpression?: string;
+      running: boolean;
+      scheduled: boolean;
+    }>[] = [];
     this.jobs.forEach((job, configId) => {
       jobPromises.push(
         configService.getConfigById(configId).then(config => ({
@@ -378,7 +391,7 @@ class SchedulerService {
   }
 
   // 计算下次执行时间
-  getNextRunTime(cronExpression) {
+  getNextRunTime(cronExpression: string): string {
     try {
       if (!cron.validate(cronExpression)) {
         return '无效的 cron 表达式';
@@ -389,7 +402,7 @@ class SchedulerService {
       const nextRun = new Date();
       nextRun.setHours(nextRun.getHours() + 1);
       return nextRun.toLocaleString('zh-CN');
-    } catch (error) {
+    } catch (error: any) {
       return '计算失败';
     }
   }

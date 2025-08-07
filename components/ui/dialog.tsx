@@ -33,7 +33,7 @@ function DialogClose({
 function DialogOverlay({
   className,
   ...props
-}) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     (<DialogPrimitive.Overlay
       data-slot="dialog-overlay"
@@ -49,7 +49,7 @@ function DialogContent({
   className,
   children,
   ...props
-}) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     (<DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -74,7 +74,7 @@ function DialogContent({
 function DialogHeader({
   className,
   ...props
-}) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     (<div
       data-slot="dialog-header"
@@ -86,7 +86,7 @@ function DialogHeader({
 function DialogFooter({
   className,
   ...props
-}) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     (<div
       data-slot="dialog-footer"
@@ -98,7 +98,7 @@ function DialogFooter({
 function DialogTitle({
   className,
   ...props
-}) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     (<DialogPrimitive.Title
       data-slot="dialog-title"
@@ -110,7 +110,7 @@ function DialogTitle({
 function DialogDescription({
   className,
   ...props
-}) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     (<DialogPrimitive.Description
       data-slot="dialog-description"

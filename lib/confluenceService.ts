@@ -1,4 +1,8 @@
 class ConfluenceService {
+  private baseUrl: string | null;
+  private username: string | null;
+  private apiToken: string | null;
+
   constructor() {
     this.baseUrl = null;
     this.username = null;
@@ -7,7 +11,7 @@ class ConfluenceService {
   }
 
   // 从环境变量初始化
-  initializeFromEnv() {
+  initializeFromEnv(): void {
     if (process.env.CONFLUENCE_USERNAME && process.env.CONFLUENCE_API_TOKEN && process.env.CONFLUENCE_BASE_URL) {
       this.baseUrl = process.env.CONFLUENCE_BASE_URL.replace(/\/$/, '');
       this.username = process.env.CONFLUENCE_USERNAME;
@@ -16,14 +20,14 @@ class ConfluenceService {
   }
 
   // 设置连接信息
-  setConnection(baseUrl, username, apiToken) {
+  setConnection(baseUrl: string, username: string, apiToken: string): void {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.username = username;
     this.apiToken = apiToken;
   }
 
   // 获取认证头
-  getAuthHeaders() {
+  getAuthHeaders(): any {
     if (!this.username || !this.apiToken) {
       throw new Error('Confluence认证信息未配置');
     }
@@ -37,7 +41,7 @@ class ConfluenceService {
   }
 
   // REST API调用封装
-  async makeRequest(endpoint, options = {}) {
+  async makeRequest(endpoint: string, options: any = {}): Promise<any> {
     if (!this.baseUrl) {
       throw new Error('Confluence连接未配置，请先调用setConnection方法');
     }
@@ -63,14 +67,14 @@ class ConfluenceService {
       const data = await response.json();
       console.log('API请求成功，返回数据类型:', typeof data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('REST API调用失败:', error);
       throw error;
     }
   }
 
   // 从URL中提取页面ID
-  extractPageIdFromUrl(url) {
+  extractPageIdFromUrl(url: string): string {
     console.log('正在从URL提取页面ID:', url);
 
     // 支持多种Confluence URL格式
@@ -94,7 +98,7 @@ class ConfluenceService {
   }
 
   // 获取页面内容
-  async getPageContent(pageId) {
+  async getPageContent(pageId: string): Promise<any> {
     console.log('正在获取页面内容，页面ID:', pageId);
     console.log('Confluence配置信息:', {
       baseUrl: this.baseUrl,
@@ -129,27 +133,27 @@ class ConfluenceService {
         lastModifiedBy: page.version?.by?.displayName || page.version?.by?.username || '未知用户',
         createdBy: page.history?.createdBy?.displayName || page.history?.createdBy?.username || '未知用户',
         createdDate: page.history?.createdDate || page.version?.when || new Date().toISOString(),
-        labels: page.metadata?.labels?.results?.map(label => label.name) || [],
+        labels: page.metadata?.labels?.results?.map((label: { name: string }) => label.name) || [],
         ancestors: page.ancestors || []
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取页面内容失败:', error);
 
       // 处理具体的错误类型
-      if (error.message.includes('HTTP 404')) {
+      if (error instanceof Error && error.message.includes('HTTP 404')) {
         throw new Error(`页面不存在或已被删除 (页面ID: ${pageId})`);
-      } else if (error.message.includes('HTTP 401')) {
+      } else if (error instanceof Error && error.message.includes('HTTP 401')) {
         throw new Error('认证失败，请检查用户名和API Token');
-      } else if (error.message.includes('HTTP 403')) {
+      } else if (error instanceof Error && error.message.includes('HTTP 403')) {
         throw new Error('权限不足，无法访问该页面');
       } else {
-        throw new Error(`获取页面内容失败: ${error.message}`);
+        throw new Error(`获取页面内容失败: ${error}`);
       }
     }
   }
 
   // 使用REST API获取子页面列表（兼容老版本Confluence）
-  async getChildPages(pageId, limit = 100) {
+  async getChildPages(pageId: string, limit = 100): Promise<any[]> {
     console.log('正在获取子页面，父页面ID:', pageId);
     
     try {
@@ -173,8 +177,8 @@ class ConfluenceService {
           // 获取完整的页面内容
           const fullPage = await this.getPageContent(page.id);
           childPages.push(fullPage);
-        } catch (error) {
-          console.warn(`获取子页面 ${page.id} 内容失败:`, error.message);
+        } catch (error: any) {
+          console.warn(`获取子页面 ${page.id} 内容失败:`, error);
           // 使用基本信息作为备选
           childPages.push({
             id: page.id,
@@ -189,14 +193,14 @@ class ConfluenceService {
 
       console.log(`获取到 ${childPages.length} 个子页面`);
       return childPages;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取子页面失败:', error);
-      throw new Error(`获取子页面失败: ${error.message}`);
+      throw new Error(`获取子页面失败: ${error}`);
     }
   }
 
   // 搜索页面
-  async searchPages(query, spaceKey = null) {
+  async searchPages(query: string, spaceKey: string | null = null): Promise<any[]> {
     console.log('正在搜索页面，查询:', query, '空间:', spaceKey);
 
     try {
@@ -210,14 +214,14 @@ class ConfluenceService {
 
       console.log(`搜索到 ${response.results?.length || 0} 个页面`);
       return response.results || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error('搜索页面失败:', error);
-      throw new Error(`搜索页面失败: ${error.message}`);
+      throw new Error(`搜索页面失败: ${error}`);
     }
   }
 
   // 获取空间信息
-  async getSpaceInfo(spaceKey) {
+  async getSpaceInfo(spaceKey: string): Promise<any> {
     console.log('正在获取空间信息，空间键:', spaceKey);
 
     try {
@@ -226,14 +230,14 @@ class ConfluenceService {
 
       console.log('获取到空间信息:', space.name);
       return space;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取空间信息失败:', error);
-      throw new Error(`获取空间信息失败: ${error.message}`);
+      throw new Error(`获取空间信息失败: ${error}`);
     }
   }
 
   // 获取页面评论（只返回最新版本的评论）
-  async getPageComments(pageId) {
+  async getPageComments(pageId: string): Promise<any[]> {
     console.log('正在获取页面评论，页面ID:', pageId);
 
     try {
@@ -241,13 +245,13 @@ class ConfluenceService {
       const response = await this.makeRequest(endpoint);
 
       // 过滤掉版本1的评论，只保留最新版本的评论
-      const latestComments = (response.results || []).filter(comment => {
+      const latestComments = (response.results || []).filter((comment: { version?: { number: number } }) => {
         return comment.version && comment.version.number > 1;
       });
 
       console.log(`获取到 ${response.results?.length || 0} 条评论，过滤后剩余 ${latestComments.length} 条最新评论`);
       return latestComments;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取页面评论失败:', error);
       // 评论获取失败不应该影响主流程，返回空数组
       return [];
@@ -255,18 +259,18 @@ class ConfluenceService {
   }
 
   // 获取最新的子页面（只返回最新的一个）
-  async getLatestChildPages(pageId) {
+  async getLatestChildPages(pageId: string): Promise<any | null> {
     try {
       const childPages = await this.getChildPages(pageId, 100);
       return childPages.length > 0 ? childPages[childPages.length - 1] : null;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取最新子页面失败:', error);
-      throw new Error(`获取最新子页面失败: ${error.message}`);
+      throw new Error(`获取最新子页面失败: ${error}`);
     }
   }
 
   // 根据类型获取内容
-  async getContentByType(url, type = 'current') {
+  async getContentByType(url: string, type = 'current'): Promise<string> {
     try {
       const pageId = this.extractPageIdFromUrl(url);
       let pages = [];
@@ -321,16 +325,16 @@ class ConfluenceService {
         // 添加页面标题和元数据
         allContent += `\n\n=== 页面 ${i + 1}: ${page.title} ===\n`;
         allContent += `URL: ${page.url}\n`;
-        allContent += `空间: ${page.space} (${page.spaceKey})\n`;
-        allContent += `创建者: ${page.createdBy}\n`;
+        allContent += `空间: ${page.space?.name || '未知空间'} (${page.spaceKey || '未知空间键'})\n`;
+        allContent += `创建者: ${page.history?.createdBy?.displayName || '未知用户'}\n`;
         allContent += `创建时间: ${page.createdDate}\n`;
-        allContent += `最后修改者: ${page.lastModifiedBy}\n`;
+        allContent += `最后修改者: ${page.lastModifiedBy?.displayName || '未知用户'}\n`;
         allContent += `最后修改时间: ${page.lastModified}\n`;
-        allContent += `版本: ${page.version}\n`;
+        allContent += `版本: ${page.version?.number || 1}\n`;
 
         // 添加标签信息（如果有）
-        if (page.labels && page.labels.length > 0) {
-          allContent += `标签: ${page.labels.join(', ')}\n`;
+        if (page.history?.metadata?.labels && page.history?.metadata?.labels.length > 0) {
+          allContent += `标签: ${page.history?.metadata?.labels.join(', ')}\n`;
         }
         allContent += '\n';
 
@@ -349,7 +353,7 @@ class ConfluenceService {
             const commentAuthor = comment.history?.createdBy?.displayName || comment.history?.createdBy?.username || comment.version?.by?.displayName || comment.version?.by?.username || '未知用户';
             const commentDate = comment.history?.createdDate || comment.version?.when || '未知时间';
             const commentVersion = comment.version?.number || 1;
-            const commentLabels = comment.metadata?.labels?.results?.map(label => label.name) || [];
+            const commentLabels = comment.metadata?.labels?.results?.map((label: { name: string }) => label.name) || [];
 
             if (commentText) {
               allContent += `评论 ${commentIndex + 1} (作者: ${commentAuthor}, 时间: ${commentDate}, 版本: ${commentVersion}`;
@@ -367,14 +371,14 @@ class ConfluenceService {
       console.log(`已拼接 ${pages.length} 个页面的内容和评论`);
       console.log(allContent);
       return allContent;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取内容失败:', error);
       throw new Error(`获取内容失败: ${error.message}`);
     }
   }
 
   // 将页面内容转换为纯文本（保留结构信息和@用户信息）
-  extractTextFromHtml(html) {
+  extractTextFromHtml(html: string): string {
     if (!html) return '';
     
     // 保留更多结构信息的HTML处理

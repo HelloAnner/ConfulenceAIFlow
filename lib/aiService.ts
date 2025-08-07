@@ -1,7 +1,10 @@
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { ChatOpenAI } from '@langchain/openai';
+import type { AnalysisResult, ActionItem, Risk } from '@/types';
 
 class AIService {
+  private llm: ChatOpenAI;
+
   constructor() {
     this.llm = new ChatOpenAI({
       openAIApiKey: process.env.OPENAI_API_KEY,
@@ -15,12 +18,12 @@ class AIService {
   }
 
   // 创建系统提示模板
-  createSystemPrompt() {
+  createSystemPrompt(): string {
     return `你是一个专业的文档分析助手，专门分析 Confluence 页面内容。请根据用户的具体需求，对提供的文档内容进行分析，并只用一句话简洁地总结分析结果。`;
   }
 
   // 创建用户提示模板
-  createUserPrompt(confluenceContent, userRequirement) {
+  createUserPrompt(confluenceContent: string, userRequirement: string): string {
     return `请分析以下 Confluence 文档内容，并根据我的具体需求进行分析：
 
 **我的分析需求：**
@@ -33,7 +36,7 @@ ${confluenceContent}
   }
 
   // 分析 Confluence 内容
-  async analyzeContent(confluenceContent, userRequirement) {
+  async analyzeContent(confluenceContent: string, userRequirement: string): Promise<string> {
     try {
       const systemMessage = new SystemMessage(this.createSystemPrompt());
       const userMessage = new HumanMessage(
@@ -43,15 +46,15 @@ ${confluenceContent}
       console.log('开始AI分析...');
       const response = await this.llm.invoke([systemMessage, userMessage]);
       console.log('AI分析完成', response);
-      return response.content;
-    } catch (error) {
+      return typeof response.content === 'string' ? response.content : String(response.content);
+    } catch (error: any) {
       console.error('AI分析失败:', error);
       throw new Error(`AI分析失败: ${error.message}`);
     }
   }
 
   // 备用解析方法：提取摘要
-  extractSummary(content) {
+  extractSummary(content: string): string {
     const lines = content.split('\n');
     for (const line of lines) {
       if (line.includes('摘要') || line.includes('总结') || line.includes('Summary')) {
@@ -62,8 +65,8 @@ ${confluenceContent}
   }
 
   // 备用解析方法：提取关键点
-  extractKeyPoints(content) {
-    const points = [];
+  extractKeyPoints(content: string): string[] {
+    const points: string[] = [];
     const lines = content.split('\n');
     
     for (const line of lines) {
@@ -79,8 +82,8 @@ ${confluenceContent}
   }
 
   // 备用解析方法：提取行动项
-  extractActionItems(content) {
-    const actionItems = [];
+  extractActionItems(content: string): ActionItem[] {
+    const actionItems: ActionItem[] = [];
     const lines = content.split('\n');
     
     for (const line of lines) {
@@ -99,8 +102,8 @@ ${confluenceContent}
   }
 
   // 备用解析方法：提取建议
-  extractRecommendations(content) {
-    const recommendations = [];
+  extractRecommendations(content: string): string[] {
+    const recommendations: string[] = [];
     const lines = content.split('\n');
     
     for (const line of lines) {
@@ -116,7 +119,7 @@ ${confluenceContent}
   }
 
   // 格式化分析结果用于通知
-  formatResultForNotification(analysisResult) {
+  formatResultForNotification(analysisResult: AnalysisResult): string {
     let message = `# AI 分析结果\n\n`;
     
     if (analysisResult.summary) {

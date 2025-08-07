@@ -1,13 +1,13 @@
 // 启动脚本 - 初始化所有服务
-import configService from './configService.js';
-import schedulerService from './schedulerService.js';
+import configService from './configService';
+import schedulerService from './schedulerService';
 
 // 防止重复初始化的标志
 let isInitialized = false;
 let isInitializing = false;
 
 // 启动应用程序时的初始化函数
-export async function initializeServices() {
+export async function initializeServices(): Promise<any> {
   // 如果已经初始化或正在初始化，直接返回
   if (isInitialized || isInitializing) {
     console.log('🔄 服务已初始化或正在初始化中，跳过重复初始化');
@@ -77,7 +77,7 @@ export async function initializeServices() {
       activeJobs: activeConfigsCount
     };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 服务初始化失败:', error);
     isInitializing = false; // 重置初始化状态
     throw error;
@@ -85,7 +85,7 @@ export async function initializeServices() {
 }
 
 // 优雅关闭函数
-export async function shutdownServices() {
+export async function shutdownServices(): Promise<void> {
   try {
     console.log('🛑 开始关闭服务...');
     
@@ -103,7 +103,7 @@ export async function shutdownServices() {
     
     console.log('✅ 服务关闭完成');
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 服务关闭失败:', error);
     throw error;
   }
@@ -116,7 +116,7 @@ if (typeof process !== 'undefined') {
     try {
       await shutdownServices();
       process.exit(0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('关闭过程中发生错误:', error);
       process.exit(1);
     }
@@ -127,7 +127,7 @@ if (typeof process !== 'undefined') {
     try {
       await shutdownServices();
       process.exit(0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('关闭过程中发生错误:', error);
       process.exit(1);
     }
@@ -135,7 +135,7 @@ if (typeof process !== 'undefined') {
 }
 
 // 健康检查函数
-export async function healthCheck() {
+export async function healthCheck(): Promise<any> {
   try {
     const configs = await configService.getAllConfigs();
     const schedulerStatus = schedulerService.isRunning ? await schedulerService.getAllJobsStatus() : null;
@@ -166,11 +166,11 @@ export async function healthCheck() {
       data: status
     };
     
-  } catch (error) {
+  } catch (error: any) {
     return {
       success: false,
       status: 'unhealthy',
-      error: error.message
+      error: (error as Error).message
     };
   }
 }

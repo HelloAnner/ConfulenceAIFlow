@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import AIService from '../../../lib/aiService.js';
-import configService from '../../../lib/configService.js';
-import ConfluenceService from '../../../lib/confluenceService.js';
-import NotificationService from '../../../lib/notificationService.js';
-import schedulerService from '../../../lib/schedulerService.js';
+import { NextRequest, NextResponse } from 'next/server';
+import AIService from '../../../lib/aiService';
+import configService from '../../../lib/configService';
+import ConfluenceService from '../../../lib/confluenceService';
+import NotificationService from '../../../lib/notificationService';
+import schedulerService from '../../../lib/schedulerService';
 
 // 初始化服务实例
 const confluenceService = new ConfluenceService();
@@ -11,7 +11,7 @@ const aiService = new AIService();
 const notificationService = new NotificationService();
 
 // POST - 执行Confluence AI任务
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
@@ -103,7 +103,7 @@ export async function POST(request) {
       message: 'AI任务执行成功'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     const executionTime = Date.now() - startTime;
     console.error('执行AI任务失败:', error);
 
@@ -120,10 +120,10 @@ export async function POST(request) {
 }
 
 // GET - 手动执行指定配置的任务
-export async function GET(request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const configId = parseInt(searchParams.get('configId'));
+    const configId = parseInt(searchParams.get('configId') || '0');
     const action = searchParams.get('action');
 
     if (action === 'execute' && configId) {
@@ -153,7 +153,7 @@ export async function GET(request) {
       { status: 400 }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('操作失败:', error);
     return NextResponse.json(
       { success: false, error: '操作失败: ' + error.message },
