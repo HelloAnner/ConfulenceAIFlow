@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 // GET - 获取所有配置
 export async function GET() {
   try {
-    const configs = configService.getAllConfigs();
+    const configs = await configService.getAllConfigs();
     return NextResponse.json({ 
       success: true, 
       data: configs 

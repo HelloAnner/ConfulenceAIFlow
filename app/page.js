@@ -9,15 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Bell,
   Brain,
-  Clock,
+  Calendar,
+  CheckCircle,
   Edit,
-  Globe,
+  History,
   Play,
   Plus,
   Search,
-  Trash2
+  Timer,
+  Trash2,
+  XCircle
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -31,6 +33,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [executionRecords, setExecutionRecords] = useState([]);
+  const [nextRunTime, setNextRunTime] = useState(null);
+  const [loadingRecords, setLoadingRecords] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     confluenceUrl: "",
@@ -291,6 +296,10 @@ export default function Home() {
       const result = await response.json();
       if (result.success) {
         toast.success('任务已触发执行！');
+        // 重新获取执行记录
+        if (selectedConfig && selectedConfig.id === config.id) {
+          fetchExecutionRecords(config.id);
+        }
       } else {
         throw new Error(result.error);
       }
@@ -301,6 +310,42 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+
+  // 获取执行记录
+  const fetchExecutionRecords = async (configId) => {
+    if (!configId) return;
+
+    try {
+      setLoadingRecords(true);
+      const response = await fetch(`/api/execution-records?configId=${configId}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setExecutionRecords(result.data.records || []);
+        setNextRunTime(result.data.nextRunTime);
+      } else {
+        console.error('获取执行记录失败:', result.error);
+        setExecutionRecords([]);
+        setNextRunTime(null);
+      }
+    } catch (error) {
+      console.error('获取执行记录失败:', error);
+      setExecutionRecords([]);
+      setNextRunTime(null);
+    } finally {
+      setLoadingRecords(false);
+    }
+  };
+
+  // 当选择配置时获取执行记录
+  useEffect(() => {
+    if (selectedConfig) {
+      fetchExecutionRecords(selectedConfig.id);
+    } else {
+      setExecutionRecords([]);
+      setNextRunTime(null);
+    }
+  }, [selectedConfig]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -559,104 +604,110 @@ export default function Home() {
                       </Button>
                     </div>
                   
-                  {/* 配置详情 */}
-                  <div className="space-y-3">
-                    <Card>
-                      <CardHeader className="pb-2">
+                    {/* 下次执行时间 */}
+                    {nextRunTime && (
+                      <Card className="mb-3">
+                        <CardContent className="p-3">
                         <div className="flex items-center space-x-2">
-                          <Globe className="w-4 h-4 text-blue-600" />
-                          <h3 className="text-base font-semibold">页面配置</h3>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2 pt-0">
-                        <div>
-                          <Label className="text-xs font-medium text-gray-700">Confluence 页面地址</Label>
-                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-xs break-all">
-                            {selectedConfig.confluenceUrl}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium text-gray-700">页面类型</Label>
-                          <p className="mt-1 text-gray-900 text-xs">
-                            {selectedConfig.pageType === 'current' ? '当前页面内容' :
-                             selectedConfig.pageType === 'all-children' ? '当前页面的全部子页面内容' :
-                             '当前页面的最新子页面内容'}
-                          </p>
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium text-gray-700">下次执行时间:</span>
+                            <span className="text-sm text-gray-900">{nextRunTime}</span>
                         </div>
                       </CardContent>
                     </Card>
-                    
+                    )}
+
+                    {/* 执行历史 */}
                     <Card>
                       <CardHeader className="pb-2">
                         <div className="flex items-center space-x-2">
-                          <Brain className="w-4 h-4 text-purple-600" />
-                          <h3 className="text-base font-semibold">AI 处理配置</h3>
+                          <History className="w-4 h-4 text-purple-600" />
+                          <h3 className="text-base font-semibold">执行历史</h3>
+                          {loadingRecords && (
+                            <div className="ml-2">
+                              <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
-                        <div>
-                          <Label className="text-xs font-medium text-gray-700">处理需求</Label>
-                          <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-xs leading-relaxed">
-                            {selectedConfig.description}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center space-x-2">
-                          <Bell className="w-4 h-4 text-green-600" />
-                          <h3 className="text-base font-semibold">通知配置</h3>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2 pt-0">
-                        <div>
-                          <Label className="text-xs font-medium text-gray-700">通知方式</Label>
-                          <p className="mt-1 text-gray-900 text-xs">企业微信</p>
-                        </div>
-                        {selectedConfig.webhookUrl && (
-                          <div>
-                            <Label className="text-xs font-medium text-gray-700">Webhook URL</Label>
-                            <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded break-all font-mono text-xs">
-                              {selectedConfig.webhookUrl}
-                            </p>
+                        {executionRecords.length === 0 ? (
+                          <div className="text-center py-8">
+                            <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500 text-sm">暂无执行记录</p>
+                            <p className="text-gray-400 text-xs mt-1">执行任务后将显示历史记录</p>
                           </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {executionRecords.map((record, index) => (
+                              <div key={index} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center space-x-2">
+                                    {record.status === 'success' ? (
+                                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                    ) : (
+                                      <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                    )}
+                                    <span className={`text-xs font-medium ${record.status === 'success' ? 'text-green-700' : 'text-red-700'
+                                      }`}>
+                                      {record.status === 'success' ? '执行成功' : '执行失败'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-3 text-xs text-gray-500">
+                                    <div className="flex items-center space-x-1">
+                                      <Timer className="w-3 h-3" />
+                                      <span>{record.executionTime}</span>
+                                    </div>
+                                    <span>{new Date(record.executedAt).toLocaleString('zh-CN')}</span>
+                                  </div>
+                                </div>
+
+                                {record.status === 'failed' && record.error && (
+                                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
+                                    <span className="font-medium text-red-700">错误信息:</span>
+                                    <p className="text-red-600 mt-1">{record.error}</p>
+                                  </div>
+                                )}
+
+                                {record.status === 'success' && record.confluenceData && (
+                                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-blue-50 p-2 rounded">
+                                      <span className="font-medium text-blue-700">页面类型:</span>
+                                      <p className="text-blue-600">{record.confluenceData.pageType}</p>
+                                    </div>
+                                    <div className="bg-blue-50 p-2 rounded">
+                                      <span className="font-medium text-blue-700">页面数量:</span>
+                                      <p className="text-blue-600">{record.confluenceData.totalPages || 1}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {record.status === 'success' && record.analysisResult && (
+                                  <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded">
+                                    <span className="font-medium text-purple-700 text-xs">AI 分析结果:</span>
+                                    <p className="text-purple-600 text-xs mt-1 line-clamp-3">
+                                      {record.analysisResult.length > 200
+                                        ? record.analysisResult.substring(0, 200) + '...'
+                                        : record.analysisResult
+                                      }
+                                    </p>
+                                  </div>
+                                )}
+
+                                {record.status === 'success' && record.notificationResult && (
+                                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                                    <span className="font-medium text-green-700 text-xs">通知状态:</span>
+                                    <p className="text-green-600 text-xs mt-1">
+                                      {record.notificationResult.success ? '通知发送成功' : `通知发送失败: ${record.notificationResult.error}`}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                        </div>
                         )}
-                          {selectedConfig.notificationTemplate && (
-                            <div>
-                              <Label className="text-xs font-medium text-gray-700">通知模板</Label>
-                              <p className="mt-1 text-gray-900 bg-gray-50 p-2 rounded text-xs whitespace-pre-wrap">
-                                {selectedConfig.notificationTemplate}
-                              </p>
-                            </div>
-                          )}
                       </CardContent>
                     </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center space-x-2">
-                          <Clock className="w-4 h-4 text-orange-600" />
-                          <h3 className="text-base font-semibold">执行计划</h3>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2 pt-0">
-                        <div>
-                          <Label className="text-xs font-medium text-gray-700">执行周期</Label>
-                          <p className="mt-1 text-gray-900 font-mono text-xs">
-                            {selectedConfig.cronExpression || '0 9 * * 1-5'}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-xs font-medium text-gray-700">下次执行时间</Label>
-                          <p className="mt-1 text-gray-900 text-xs">
-                            {selectedConfig.nextRunTime || getNextRunTime(selectedConfig.cronExpression || '0 9 * * 1-5')}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
                 </div>
               </div>
             </div>
@@ -666,8 +717,8 @@ export default function Home() {
                 <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Brain className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">选择配置查看详情</h3>
-                <p className="text-gray-500">从左侧列表中选择一个配置来查看详细信息</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">选择配置查看执行历史</h3>
+                    <p className="text-gray-500">从左侧列表中选择一个配置来查看执行记录</p>
               </div>
             </div>
           )}

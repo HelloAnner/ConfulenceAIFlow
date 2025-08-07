@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import AIService from '../../../lib/aiService.js';
+import configService from '../../../lib/configService.js';
 import ConfluenceService from '../../../lib/confluenceService.js';
 import NotificationService from '../../../lib/notificationService.js';
-import configService from '../../../lib/configService.js';
 import schedulerService from '../../../lib/schedulerService.js';
 
 // 初始化服务实例
@@ -16,18 +16,17 @@ export async function POST(request) {
   
   try {
     const body = await request.json();
-    let { configId, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, manual = false } = body;
+    let { configId, confluenceUrl, description, notificationType, webhookUrl, notificationTemplate, pageType, manual = true } = body;
 
     // 如果提供了configId，从数据库获取完整配置
     if (configId) {
-      const config = configService.getConfigById(configId);
+      const config = await configService.getConfigById(configId);
       if (!config) {
         return NextResponse.json(
           { success: false, error: '配置不存在' },
           { status: 404 }
         );
-      }
-      
+      }      
       // 使用配置中的信息
       confluenceUrl = confluenceUrl || config.confluenceUrl;
       description = description || config.description;
@@ -149,7 +148,7 @@ export async function GET(request) {
 
     if (action === 'status') {
       // 获取调度器状态
-      const status = schedulerService.getAllJobsStatus();
+      const status = await schedulerService.getAllJobsStatus();
 
       return NextResponse.json({
         success: true,
