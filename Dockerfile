@@ -9,13 +9,12 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
     apk add --no-cache libc6-compat
 WORKDIR /app
 
-# 设置 npm 国内镜像源
-RUN npm config set registry https://registry.npmmirror.com
+# 复制npm配置和依赖文件
+COPY .npmrc package.json package-lock.json* ./
 
 # 安装依赖基于你的首选包管理器
-COPY package.json package-lock.json* ./
 RUN \
-  if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; \
+  if [ -f package-lock.json ]; then npm ci; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
@@ -23,8 +22,8 @@ RUN \
 FROM base AS builder
 WORKDIR /app
 
-# 设置 npm 国内镜像源
-RUN npm config set registry https://registry.npmmirror.com
+# 复制npm配置
+COPY .npmrc ./
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -40,13 +39,12 @@ RUN npm run build
 FROM base AS prod-deps
 WORKDIR /app
 
-# 设置 npm 国内镜像源
-RUN npm config set registry https://registry.npmmirror.com
+# 复制npm配置和依赖文件
+COPY .npmrc package.json package-lock.json* ./
 
 # 只安装生产依赖
-COPY package.json package-lock.json* ./
 RUN \
-  if [ -f package-lock.json ]; then npm ci --only=production --no-audit --no-fund; \
+  if [ -f package-lock.json ]; then npm ci --only=production; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
