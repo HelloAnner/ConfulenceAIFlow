@@ -15,7 +15,7 @@ RUN npm config set registry https://registry.npmmirror.com
 # 安装依赖基于你的首选包管理器
 COPY package.json package-lock.json* ./
 RUN \
-  if [ -f package-lock.json ]; then npm ci --only=production --no-audit --no-fund; \
+  if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
@@ -35,6 +35,20 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # 构建应用
 RUN npm run build
+
+# 生产依赖阶段
+FROM base AS prod-deps
+WORKDIR /app
+
+# 设置 npm 国内镜像源
+RUN npm config set registry https://registry.npmmirror.com
+
+# 只安装生产依赖
+COPY package.json package-lock.json* ./
+RUN \
+  if [ -f package-lock.json ]; then npm ci --only=production --no-audit --no-fund; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
 # 生产镜像，复制所有文件并运行 next
 FROM base AS runner
@@ -56,6 +70,9 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# 复制生产依赖
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 USER nextjs
 
