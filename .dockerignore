@@ -1,16 +1,64 @@
+# Docker 相关文件
 Dockerfile
 .dockerignore
+docker-compose.yml
+
+# 依赖和构建产物
 node_modules
-npm-debug.log
-README.md
+.next
+dist
+build
+
+# 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 环境变量文件
 .env
 .env.local
+.env.development.local
+.env.test.local
 .env.production.local
-.env.local
+
+# 版本控制
 .git
 .gitignore
-.next
-.vercel
-*.md
+.gitattributes
+
+# IDE 和编辑器
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 操作系统文件
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# 文档和说明
+*.md
+LICENSE
+
+# 测试和覆盖率
+coverage
+.nyc_output
+
+# 部署相关
+.vercel
+.netlify
+
+# 临时文件
+*.tmp
+*.temp
+
+# 构建脚本和包
+build-package.sh
+*.tar.gz
+*.zip
